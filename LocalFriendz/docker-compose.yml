@@ -1,0 +1,56 @@
+version: '3.4'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "nR2B5j9gEy"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - mynetwork
+
+  localfriendzapi.ui:
+    image: ${DOCKER_REGISTRY-}localfriendzapiui
+    container_name: localfriendzapi.ui
+    build:
+      context: .
+      dockerfile: src/LocalFriendzApi.UI/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=DB_FIAP_ARQUITETO;User ID=sa;Password=nR2B5j9gEy;Trusted_Connection=False;TrustServerCertificate=True;"
+    depends_on:
+      - sqlserver
+    networks:
+      - mynetwork
+
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    ports:
+      - "9090:9090"
+    networks:
+      - mynetwork
+    volumes:
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:9.5.15
+    ports:
+      - "3000:3000"
+    networks:
+      - mynetwork
+    depends_on:
+      - prometheus
+
+volumes:
+  sqlserver_data:
+networks:
+  mynetwork:
+    driver: bridge

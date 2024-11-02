@@ -9,6 +9,8 @@ using FluentValidation;
 using LocalFriendzApi.Application.IServices;
 using LocalFriendzApi.Application.Services;
 using LocalFriendzApi.Application.Validations;
+using LocalFriendzApi.CrossCutting.Bus;
+using LocalFriendzApi.CrossCutting.Bus.Contracts;
 using LocalFriendzApi.Domain.IRepositories;
 using LocalFriendzApi.Infrastructure.Data.Context;
 using LocalFriendzApi.Infrastructure.ExternalServices.Interfaces;
@@ -50,6 +52,10 @@ namespace LocalFriendzApi.UI.Configuration
             builder
                 .Services
                 .AddTransient<IContactRepository, ContactRepository>();
+
+            builder
+                .Services
+                .AddScoped<IMessageBusService, MessageBusService>();
         }
 
         public static void AddServicesOpenTelemetry(this WebApplicationBuilder builder)

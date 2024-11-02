@@ -40,6 +40,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\LocalFriendzApi.Application\LocalFriendzApi.Application.csproj" />
+		<ProjectReference Include="..\LocalFriendzApi.CrossCutting.Bus\LocalFriendzApi.CrossCutting.Bus.csproj" />
 		<ProjectReference Include="..\LocalFriendzApi.Infrastructure\LocalFriendzApi.Infrastructure.csproj" />
 	</ItemGroup>
 

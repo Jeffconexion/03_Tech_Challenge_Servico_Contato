@@ -6,11 +6,15 @@
 // --------------------------------------------------------------------------------------------------
 
 using System.Net;
+using System.Text;
+using System.Text.Json;
 using FluentValidation;
 using LocalFriendzApi.Application.IServices;
 using LocalFriendzApi.Application.Request;
 using LocalFriendzApi.Application.Response;
+using LocalFriendzApi.CrossCutting.Bus.Contracts;
 using LocalFriendzApi.Domain.Models;
+using LocalFriendzApi.Infrastructure.Dtos;
 using LocalFriendzApi.Infrastructure.ExternalServices.Interfaces;
 using LocalFriendzApi.UI.Configuration;
 
@@ -22,7 +26,7 @@ namespace LocalFriendzApi.UI.Endpoints
         {
             var contactGroup = app.MapGroup("/contact");
 
-            contactGroup.MapPost("api/create", async (IContactServices contactServices, IAreaCodeExternalService areaCodeExternalService, IValidator<CreateContactRequest> validator, CreateContactRequest request) =>
+            contactGroup.MapPost("api/create", async (IContactServices contactServices, IAreaCodeExternalService areaCodeExternalService, IMessageBusService _messageBusService, IValidator<CreateContactRequest> validator, CreateContactRequest request) =>
             {
                 var validationResult = await validator.ValidateAsync(request);
 
@@ -41,6 +45,8 @@ namespace LocalFriendzApi.UI.Endpoints
                 }
 
                 var response = await contactServices.CreateContact(request);
+                SendMessageNotification(_messageBusService, response);
+
                 return response.ConfigureResponseStatus();
             })
             .WithTags("Contact")
@@ -115,6 +121,14 @@ namespace LocalFriendzApi.UI.Endpoints
               .Produces((int)HttpStatusCode.NotFound)
               .Produces((int)HttpStatusCode.InternalServerError)
               .WithOpenApi();
+        }
+
+        private static void SendMessageNotification(IMessageBusService _messageBusService, Response<Contact?> response)
+        {
+            var messanotification = new MessageNotificationDto { Email = response.Data.Email, Message = "Contato criado com sucesso!" };
+            var messanotificationJson = JsonSerializer.Serialize(messanotification);
+            var notificationBytes = Encoding.UTF8.GetBytes(messanotificationJson);
+            _messageBusService.Publish("fila-notificacoes", notificationBytes);
         }
     }
 }

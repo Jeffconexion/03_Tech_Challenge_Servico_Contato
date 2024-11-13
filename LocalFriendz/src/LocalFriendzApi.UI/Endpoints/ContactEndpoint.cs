@@ -45,7 +45,8 @@ namespace LocalFriendzApi.UI.Endpoints
                 }
 
                 var response = await contactServices.CreateContact(request);
-                SendMessageNotification(_messageBusService, response);
+                SendMessageNotification("fila-notificacoes", _messageBusService, response, null);
+                SendMessageNotification("fila-sentimento", _messageBusService, response, request.FeedbackMessage);
 
                 return response.ConfigureResponseStatus();
             })
@@ -123,12 +124,12 @@ namespace LocalFriendzApi.UI.Endpoints
               .WithOpenApi();
         }
 
-        private static void SendMessageNotification(IMessageBusService _messageBusService, Response<Contact?> response)
+        private static void SendMessageNotification(string queue, IMessageBusService _messageBusService, Response<Contact?> response, string? feedbackMessage)
         {
-            var messanotification = new MessageNotificationDto { Email = response.Data.Email, Message = "Contato criado com sucesso!" };
+            var messanotification = new MessageNotificationDto { Id = response.Data.Id, Name = response.Data.Name, Email = response.Data.Email, Message = "Contato criado com sucesso!" ,FeedbackMessage = feedbackMessage };
             var messanotificationJson = JsonSerializer.Serialize(messanotification);
             var notificationBytes = Encoding.UTF8.GetBytes(messanotificationJson);
-            _messageBusService.Publish("fila-notificacoes", notificationBytes);
+            _messageBusService.Publish(queue, notificationBytes);
         }
     }
 }

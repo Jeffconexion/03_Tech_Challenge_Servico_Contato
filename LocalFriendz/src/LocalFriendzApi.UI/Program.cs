@@ -26,7 +26,7 @@ var app = builder.Build();
 app.MapPrometheusScrapingEndpoint();
 app.MapEndpoints();
 
-DataBaseManagementService.MigrationInitialisation(app);
+//DataBaseManagementService.MigrationInitialisation(app);
 
 if (app.Environment.IsDevelopment())
 {

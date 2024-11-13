@@ -19,6 +19,8 @@ namespace LocalFriendzApi.Application.Request
 
         public string? CodeRegion { get; set; }
 
+        public string? FeedbackMessage { get; set; }
+
         public Contact ToEntity(CreateContactRequest request)
         {
             return new Contact()

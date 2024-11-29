@@ -26,6 +26,41 @@ namespace LocalFriendzApi.UI.Endpoints
         {
             var contactGroup = app.MapGroup("/contact");
 
+            contactGroup.MapPost("api/crate/process/lote", async (IContactServices contactServices, IAreaCodeExternalService areaCodeExternalService, IMessageBusService _messageBusService, IValidator<CreateContactRequest> validator, List<CreateContactRequest> request) =>
+            {
+                foreach (var item in request)
+                {
+                    var validationResult = await validator.ValidateAsync(item);
+
+                    if (validationResult.IsValid is false)
+                    {
+                        return Results.ValidationProblem(validationResult.ToDictionary());
+                    }
+
+                    try
+                    {
+                        await areaCodeExternalService.GetAreaCode(int.Parse(item.CodeRegion));
+                    }
+                    catch (Exception)
+                    {
+                        return TypedResults.NotFound(new Response<Contact?>(null, 404, message: "Code region not found!"));
+                    }
+                }
+
+                SendMessageNotificationInLote("fila-processamento", _messageBusService, request, null);
+
+                var response = new Response<Contact> { Message = "Processamento em Lote sendo realizado.", Code = 200 };
+                return response.ConfigureResponseStatus();
+            })
+            .WithTags("Contact")
+            .WithName("Contact: Create Process in Lote")
+            .WithSummary("Create a list of contact record.")
+            .WithDescription("Creates and saves a new contact in the system. This endpoint requires valid contact details including name, email, and phone number. Returns the created contact information upon successful save.")
+            .Produces((int)HttpStatusCode.Created)
+            .Produces((int)HttpStatusCode.BadRequest)
+            .Produces((int)HttpStatusCode.NotFound)
+            .WithOpenApi();
+
             contactGroup.MapPost("api/create", async (IContactServices contactServices, IAreaCodeExternalService areaCodeExternalService, IMessageBusService _messageBusService, IValidator<CreateContactRequest> validator, CreateContactRequest request) =>
             {
                 var validationResult = await validator.ValidateAsync(request);
@@ -130,6 +165,16 @@ namespace LocalFriendzApi.UI.Endpoints
             var messanotificationJson = JsonSerializer.Serialize(messanotification);
             var notificationBytes = Encoding.UTF8.GetBytes(messanotificationJson);
             _messageBusService.Publish(queue, notificationBytes);
+        }
+
+        private static void SendMessageNotificationInLote(string queue, IMessageBusService _messageBusService, List<CreateContactRequest> requests, string? feedbackMessage)
+        {
+            foreach (var item in requests)
+            {
+                var messanotificationJson = JsonSerializer.Serialize<CreateContactRequest>(item);
+                var notificationBytes = Encoding.UTF8.GetBytes(messanotificationJson);
+                _messageBusService.Publish(queue, notificationBytes);
+            }
         }
     }
 }

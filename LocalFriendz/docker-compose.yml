@@ -28,8 +28,24 @@ services:
       ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=DB_FIAP_ARQUITETO;User ID=sa;Password=nR2B5j9gEy;Trusted_Connection=False;TrustServerCertificate=True;"
     depends_on:
       - sqlserver
+      - rabbitmq
     networks:
       - mynetwork
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"  # Porta padrão do AMQP
+      - "15672:15672" # Porta de gerenciamento do RabbitMQ (UI)
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/opt/rabbitmq # Para persistir dados do RabbitMQ
+    networks:
+      - mynetwork
+    mem_limit: 512m
 
   prometheus:
     image: prom/prometheus:v2.49.1
@@ -51,6 +67,7 @@ services:
 
 volumes:
   sqlserver_data:
+  rabbitmq_data:
 networks:
   mynetwork:
     driver: bridge

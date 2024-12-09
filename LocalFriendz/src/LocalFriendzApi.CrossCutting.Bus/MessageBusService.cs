@@ -12,7 +12,10 @@ namespace LocalFriendzApi.CrossCutting.Bus
         {
             _factory = new ConnectionFactory
             {
-                HostName = "localhost"
+                HostName = "rabbitmq",
+                UserName = "guest",
+                Password = "guest",
+                Port = 5672
             };
         }
 

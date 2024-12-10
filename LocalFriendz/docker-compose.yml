@@ -1,9 +1,13 @@
 version: '3.4'
 
+networks:
+  app_net:
+    driver: bridge
+    name: app_net
+
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: "nR2B5j9gEy"
@@ -12,11 +16,10 @@ services:
     volumes:
       - sqlserver_data:/var/opt/mssql
     networks:
-      - mynetwork
+      - app_net
 
   localfriendzapi.ui:
     image: ${DOCKER_REGISTRY-}localfriendzapiui
-    container_name: localfriendzapi.ui
     build:
       context: .
       dockerfile: src/LocalFriendzApi.UI/Dockerfile
@@ -30,11 +33,10 @@ services:
       - sqlserver
       - rabbitmq
     networks:
-      - mynetwork
+      - app_net
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
     ports:
       - "5672:5672"  # Porta padrão do AMQP
       - "15672:15672" # Porta de gerenciamento do RabbitMQ (UI)
@@ -44,7 +46,7 @@ services:
     volumes:
       - rabbitmq_data:/var/opt/rabbitmq # Para persistir dados do RabbitMQ
     networks:
-      - mynetwork
+      - app_net
     mem_limit: 512m
 
   prometheus:
@@ -52,7 +54,7 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - mynetwork
+      - app_net
     volumes:
       - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
 
@@ -61,13 +63,11 @@ services:
     ports:
       - "3000:3000"
     networks:
-      - mynetwork
+      - app_net
     depends_on:
       - prometheus
 
 volumes:
   sqlserver_data:
   rabbitmq_data:
-networks:
-  mynetwork:
-    driver: bridge
+

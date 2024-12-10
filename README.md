@@ -10,13 +10,13 @@ Nesta terceira fase, vamos aprimorar o projeto através de microsserviços e com
 
 Arquitetura proposta para incremento de novas melhorias.
 
-![Cenário de estudo de caso](https://github.com/Jeffconexion/01_Tech_Challenge_LocalFriendzApi/blob/main/LocalFriendz/imgs/Untitled.png)
+![Cenário de estudo de caso](LocalFriendz/imgs/arquitetura.png)
 
 # Microsserviços
 
-- [Serviço Notificação](https://horse-neon-79c.notion.site/Documenta-o-da-API-04183b890d7c47cb89af4445d01d6678?pvs=4)
-- [Serviço Processamento em Lote](https://horse-neon-79c.notion.site/Documenta-o-da-API-04183b890d7c47cb89af4445d01d6678?pvs=4)
-- [Serviço Análise de Sentimento](https://horse-neon-79c.notion.site/Documenta-o-da-API-04183b890d7c47cb89af4445d01d6678?pvs=4)
+- [Serviço Notificação](https://github.com/Jeffconexion/03_Tech_Challenge_Servico_Notificacao)
+- [Serviço Processamento em Lote](https://github.com/Jeffconexion/03_Tech_Challenge_Servico_Processamento_Lote)
+- [Serviço Análise de Sentimento](https://github.com/Jeffconexion/03_Tech_Challenge_Servico_Analise_Sentimento)
 
 # Serviço de Contato
 
@@ -24,7 +24,7 @@ Arquitetura proposta para incremento de novas melhorias.
 - **Processos**:
   - **Serviço Notificação:** Ao adicionar, atualizar e deletar, mensagens são disparadas na fila do RabbitMQ.
   - **Serviço Processamento em Lote:** Novo endpoint disponível para cadastramento em lote, envio para fila do RabbitMQ
-  - Serviço Analise de Sentimento: Envio de feedbacks para a fila do RabbitMQ.
+  - **Serviço Analise de Sentimento:** Envio de feedbacks para a fila do RabbitMQ.
 
 # Broker (RabbitMQ)
 

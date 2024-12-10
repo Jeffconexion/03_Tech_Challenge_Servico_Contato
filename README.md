@@ -1,38 +1,63 @@
-# Tech Challenger - Cadastro de Contatos Regionais
+# Tech Challenger - Serviço de Contato
 
 # Introdução
 
-O Tech Challenge desta fase será desenvolver um aplicativo utilizando a plataforma .Net 8 para cadastro de contatos regionais, considerando a persistência de dados e a qualidade do software.
+Na fase anterior do Tech Challenge, desenvolvemos um aplicativo .NET para cadastro de contatos regionais, com funcionalidades de adicionar, consultar, atualizar e excluir contatos, utilizando Entity Framework Core ou Dapper para persistência de dados e implementando validações de dados. Além da criação de CI/CD e monitoramento.
+
+Nesta terceira fase, vamos aprimorar o projeto através de microsserviços e comunicação por mensageria. Mantendo também o funcionamento da fase anterior.
 
 # Estudo de caso
 
-Cenário de estudo de caso
+Arquitetura proposta para incremento de novas melhorias.
 
 ![Cenário de estudo de caso](https://github.com/Jeffconexion/01_Tech_Challenge_LocalFriendzApi/blob/main/LocalFriendz/imgs/Untitled.png)
 
+# Microsserviços
 
-# Domain StoryTelling
+- [Serviço Notificação](https://horse-neon-79c.notion.site/Documenta-o-da-API-04183b890d7c47cb89af4445d01d6678?pvs=4)
+- [Serviço Processamento em Lote](https://horse-neon-79c.notion.site/Documenta-o-da-API-04183b890d7c47cb89af4445d01d6678?pvs=4)
+- [Serviço Análise de Sentimento](https://horse-neon-79c.notion.site/Documenta-o-da-API-04183b890d7c47cb89af4445d01d6678?pvs=4)
 
-Para esclarecimento foi desenvolvido o domain storytelling. Esse vai ser o fluxo da solução LocalFriendzApi
+# Serviço de Contato
 
-![ Esse vai ser o fluxo da solução LocalFriendzApi](https://github.com/Jeffconexion/01_Tech_Challenge_LocalFriendzApi/blob/main/LocalFriendz/imgs/Untitled%201.png)
+- **Função**: Este serviço é responsável por manter contato. Ele funciona como o ponto de entrada da aplicação para o processamento de vários requisitos.
+- **Processos**:
+  - **Serviço Notificação:** Ao adicionar, atualizar e deletar, mensagens são disparadas na fila do RabbitMQ.
+  - **Serviço Processamento em Lote:** Novo endpoint disponível para cadastramento em lote, envio para fila do RabbitMQ
+  - Serviço Analise de Sentimento: Envio de feedbacks para a fila do RabbitMQ.
 
-# Endpoints
+# Broker (RabbitMQ)
 
-- POST /contact/api/create
-    - Adiciona novos contatos, incluindo nome, telefone e e-mail.
-    - Cada contato está associado a um DDD correspondente a região.
-    - Validações para garantir dados consistentes.
-- GET /contact/api/list-all e /contact/api/list-by-filter
-    - Consulta contatos.
-    - Possibilidade de filtrar pelo DDD.
-    - Validações para garantir dados consistentes.
-- PUT /contact/api/update
-    - Atualização de contatos previamente cadastrado.
-    - Validações para garantir dados consistentes.
-- DELETE /contact/api/delete
-    - Exclusão de contatos previamente cadastrado.
-    - Validações para garantir dados consistentes.
+- **Função**: Este é o sistema de mensagens que recebe as informações do serviço de contato e direciona para os consumidores (serviços de processamento, análise de sentimento, e notificações).
+- **Processo**:
+  - Recebe as mensagens publicadas pelo Serviço de Contato.
+  - Encaminha as mensagens para as filas específicas, uma para cada consumidor. Cada consumidor pode ter uma fila dedicada, como `fila-processamento`, `fila-sentimento`, e `fila-notificacoes`.
+  - Garante a durabilidade e persistência das mensagens (com configurações de entrega persistente e acknowledgment), para que nenhuma mensagem seja perdida.
+- **Tecnologia**: RabbitMQ com filas configuradas para cada serviço consumidor, podendo ter mecanismos de _dead-letter queues_ para mensagens que não puderam ser processadas corretamente.
+
+# Serviço de Notificação
+
+- **Função**: Este serviço é responsável por enviar notificações aos usuários ou responsáveis por contatos com base no adicionar, atualizar e excluir contato.
+- **Processo**:
+  - Consome mensagens da `fila-notificacoes`.
+  - Com base nas informações da mensagem, determina a ação apropriada.
+  - Envia emails ou outros tipos de notificação para os usuários ou responsáveis. As mensagens podem ser personalizadas com base no tipo ação.
+
+# Processamento em Lote
+
+- **Função**: Este serviço consome os contatos recebidos e realiza um pré-processamento dos dados, agrupando-os em lotes para melhor performance e organização.
+- **Processo**:
+  - Recebe mensagens da fila `fila-processamento`.
+  - Processa as mensagens em lotes para não sobrecarregar o sistema principal.
+
+# Análise de Sentimento
+
+- **Função**: Este serviço consome feedbacks para análise de sentimentos, processando as mensagens para identificar sentimentos (positivo, negativo, neutro) e insights adicionais.
+- **Processo**:
+  - Consome mensagens da `fila-sentimento`.
+  - Aplica um modelo de Machine Learning ou uma API de processamento de linguagem natural (NLP) para classificar o sentimento das mensagens.
+  - Armazena o resultado da análise, incluindo o ID do contato, o texto original e o sentimento detectado, em uma tabela dedicada ou em um banco de dados de análise.
+- **Tecnologias**: Bibliotecas de ML (como ML.NET ou integração com APIs de NLP como Azure Cognitive Services), armazenamento em um banco de dados para análises futuras, e uso de relatórios ou painéis para visualização.
 
 # Tecnologias Utilizadas:
 
@@ -41,90 +66,10 @@ Para esclarecimento foi desenvolvido o domain storytelling. Esse vai ser o fluxo
 - **Entity Framework**: ORM (Object-Relational Mapping) utilizado para interagir com o banco de dados.
 - **xUnit**: Framework de testes utilizado para realizar testes unitários.
 - **SQL Server**: Banco de dados relacional usado para armazenar os dados da aplicação.
-
-# Teste de Unidade
-
-Foram adicionados testes de unidades nas principais classes.
-
-![Teste de unidade](https://github.com/Jeffconexion/01_Tech_Challenge_LocalFriendzApi/blob/main/LocalFriendz/imgs/TesteDeUnidade.png)
-
-# Banco de Dados
-
-Para persistência dos dados foi criado duas tabelas, a saber:
-
-```sql
-/*
-Autor:Jefferson Santos
-
-Data de Criação: 03/07/2024
-
-Propósito:
-Este script é destinado a simplificar o acesso a informações sobre contatos.
-
-*/
-
--- CRIACIATION
-CREATE DATABASE DB_FIAP_ARQUITETO
-
--- USER DATABASE
-USE DB_FIAP_ARQUITETO
-
--- CREATIATION TABLES
-CREATE TABLE TB_AREA_CODE(
-	id_area_code UNIQUEIDENTIFIER NOT NULL,
-	code_region INT NOT NULL,
-	PRIMARY KEY(id_area_code)
-)
-
-CREATE TABLE TB_CONTACT(
-	id_contact UNIQUEIDENTIFIER NOT NULL,
-	[name] VARCHAR(100) NOT NULL,
-	phone VARCHAR(20) NOT NULL,
-	email VARCHAR(40),
-	fk_id_area_code UNIQUEIDENTIFIER NOT NULL,
-	FOREIGN KEY (fk_id_area_code) REFERENCES TB_AREA_CODE(id_area_code),
-	PRIMARY KEY(id_contact)
-)
-
--- INSERT RECORDS
--- Inserindo registros na tabela TB_AREA_CODE
-INSERT INTO TB_AREA_CODE (id_area_code, code_region) VALUES
-('550e8400-e29b-41d4-a716-446655440000', 1),
-('550e8400-e29b-41d4-a716-446655440001', 2),
-('550e8400-e29b-41d4-a716-446655440002', 3);
-
--- Inserindo registros na tabela TB_CONTACT
-INSERT INTO TB_CONTACT (id_contact, [name], phone, email, fk_id_area_code) VALUES
-('660e8400-e29b-41d4-a716-446655440000', 'Alice Johnson', '555-1234', 'alice.johnson@example.com', '550e8400-e29b-41d4-a716-446655440000'),
-('660e8400-e29b-41d4-a716-446655440001', 'Bob Smith', '555-5678', 'bob.smith@example.com', '550e8400-e29b-41d4-a716-446655440001'),
-('660e8400-e29b-41d4-a716-446655440002', 'Carol White', '555-9012', 'carol.white@example.com', '550e8400-e29b-41d4-a716-446655440002');
-
--- Inserindo um novo registro de contato para Bob Smith com outro telefone
-INSERT INTO TB_CONTACT (id_contact, [name], phone, email, fk_id_area_code) VALUES
-('660e8400-e29b-41d4-a716-446655440003', 'Bob Smith', '555-6789', 'bob.smith@example.com', '550e8400-e29b-41d4-a716-446655440001');
-
--- SELECTS SOME RECORDS
-SELECT * FROM TB_AREA_CODE
-SELECT * FROM TB_CONTACT 
-
-SELECT c.name, c.phone, c.email, a.code_region FROM TB_CONTACT c
-INNER JOIN TB_AREA_CODE a
-ON a.id_area_code = c.fk_id_area_code order by [name]
-```
-
-Este comando cria uma nova migração baseada nas alterações feitas no modelo de dados.
-
-```
-Add-Migration NomeDaMigracao
-```
-
-Este comando aplica todas as migrações pendentes ao banco de dados.
-
-```
-Update-Database
-```
+- **RabbitMQ**: Broker para o gerenciamento das mensagens.
 
 # Documentação
+
 - [Documentação da API](https://horse-neon-79c.notion.site/Documenta-o-da-API-04183b890d7c47cb89af4445d01d6678?pvs=4)
 - [Documentação de Estilo para C#](https://horse-neon-79c.notion.site/Documenta-o-de-Estilo-para-C-de62b229fd01436a96f7a090b4d11e27?pvs=4)
 - [Documentação dos Testes](https://horse-neon-79c.notion.site/Documenta-o-dos-Testes-a402a32a16a24b1b925dab83201e7d19?pvs=4)
@@ -133,14 +78,10 @@ Update-Database
 
 # **Checklist de Conclusão de Tarefas**
 
-- [x]  Consultar contatos
-- [x]  Consultar contatos pelo DDD
-- [x]  Atualizar contato
-- [x]  Excluir contato
-- [x]  Persistência de dados com EF
-- [x]  Validação de e-mail, telefone e campos obrigatórios
-- [x]  Testes Unitários
-
-
-
-
+- [x] Refatorações gerais.
+- [x] Refatorar de monolítico para microsserviços.
+- [x] Serviços de Contato.
+- [x] Serviços de Notificação.
+- [x] Serviços de Processamento em Lote.
+- [x] Serviço de Análise de Sentimento.
+- [x] RabbitMQ como broker.
